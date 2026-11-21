@@ -1,0 +1,34 @@
+{
+  "tickers": [
+    "SPY"
+  ],
+  "data_sources": {
+    "SPY": "local CSV"
+  },
+  "download_start": null,
+  "download_end_exclusive": null,
+  "retrieved_at_utc": "2026-11-21T20:12:45.805056+00:00",
+  "usable_observations_by_ticker": {
+    "SPY": 6699
+  },
+  "first_forecast_date_by_ticker": {
+    "SPY": "2010-04-13 00:00:00"
+  },
+  "last_observation_date_by_ticker": {
+    "SPY": "2026-11-19 00:00:00"
+  },
+  "initial_train_size": 2520,
+  "test_size_sessions": 126,
+  "random_seed": 17,
+  "target": "next-session absolute close-to-close log return; regression models trained on log squared return",
+  "data_sha256_by_ticker": {
+    "SPY": "4bb6093aa6c17b98dee195320e61063fdf58fdd23828ae0131b26fc4bd80c470"
+  },
+  "packages": {
+    "numpy": "2.2.3",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.6.1",
+    "xgboost": "3.1.2",
+    "yfinance": "1.4.1"
+  }
+}

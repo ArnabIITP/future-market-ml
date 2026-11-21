@@ -1,0 +1,144 @@
+# FUTURE
+
+### Financial Uncertainty Testing Under Regime Evolution
+
+**Can machine learning extract stable predictive information from financial time series as market distributions change?**
+
+FUTURE is a reproducible financial machine-learning study built around that question. It combines a multi-year daily volatility forecast experiment with a short-horizon limit-order-book benchmark. The focus is out-of-sample behavior under chronological change: where models help, where they fail, and how conclusions depend on the metric.
+
+| Study | Data and validation | Headline result |
+|---|---|---|
+| **Daily volatility (primary)** | Five liquid US-listed ETFs; expanding-window forecasts from 2010–2026 | ML lowers MAE versus historical volatility for four of five assets, but raises RMSE for all five. Gains are modest and vary by asset and year. |
+| **Limit-order-book (companion)** | FI-2010; nine anchored test days, 354,825 held-out events | Models beat the class-prior baseline, but the top model changes with aggregation and scores vary across days. |
+
+## What the results say
+
+**There is predictive information, but this study does not find one reliably superior model across markets and conditions.** In the primary experiment, the best ML model reduces pooled MAE by about 2.9–6.4% for SPY, QQQ, IWM, and GLD. For TLT, the best ML MAE is about 0.2% worse than the historical-volatility baseline. Every ML model has worse pooled RMSE than that baseline on every asset, meaning the average absolute error improves in some markets while large errors remain a weakness. Year-by-year performance also changes, with some negative years.
+
+The FI-2010 companion adds a faster market-microstructure task. Its classifiers substantially beat a training-class-prior baseline, yet random forest leads on pooled macro-F1 while XGBoost leads on the equal-weight mean across test days and on pooled log loss. This benchmark demonstrates learnable structure in its supplied features; its ten-day span cannot establish a durable signal for modern electronic markets.
+
+These are forecasting experiments, **not evidence of a profitable strategy**. No transaction simulation, fees, slippage, latency, turnover, inventory, or P&L is modeled.
+
+## Primary result: daily volatility forecasting
+
+### Error depends on the metric
+
+The chart shows percentage improvement over historical volatility (positive favors the ML model). The left panel uses MAE; the right uses RMSE. Lower forecast error is better.
+
+![MAE and RMSE skill by asset. MAE improves for most models on four assets, while RMSE worsens across all five.](results/figures/error_skill.png)
+
+Best ML model per asset, selected from the evaluated linear, random-forest, and XGBoost forecasts:
+
+| Asset | Held-out forecasts | Historical-volatility MAE | Best ML model | Best ML MAE | MAE change vs baseline |
+|---|---:|---:|---|---:|---:|
+| SPY | 4,179 | 0.498% | Random forest | 0.467% | **6.4% lower** |
+| QQQ | 4,179 | 0.622% | XGBoost | 0.597% | **4.1% lower** |
+| IWM | 4,078 | 0.631% | XGBoost | 0.613% | **2.9% lower** |
+| TLT | 3,535 | 0.416% | XGBoost | 0.417% | **0.2% higher** |
+| GLD | 2,953 | 0.496% | Random forest | 0.474% | **4.6% lower** |
+
+MAE values are in percent of the next-session absolute close-to-close log return. “Best” is chosen within each asset using the same held-out pooled MAE shown here; it is a summary, not a separately validated model-selection procedure. The table should be read with the RMSE comparison and chronological chart, not in isolation.
+
+### The lead changes across years
+
+The XGBoost line below compares its annual MAE with the historical-volatility baseline for each asset. Positive values favor XGBoost. The sign changes over time, which is central to the distribution-shift question: a pooled improvement does not mean a stable advantage in every year.
+
+![Year-by-year XGBoost MAE improvement over historical volatility for five assets; positive values favor XGBoost.](results/figures/annual_xgboost_skill.png)
+
+### Event probabilities provide a secondary view
+
+A separate logistic model estimates whether the next session's absolute return exceeds the training-window 80th-percentile threshold. Across the five assets, it improves on a training base-rate forecast in log loss, but discrimination and calibration vary by asset. The plot reports ROC-AUC and log loss; it is not a trading signal.
+
+![High-volatility event ranking and probability forecast scores by asset.](results/figures/event_classification.png)
+
+## Companion result: FI-2010 order-book benchmark
+
+This companion uses the official FI-2010 NoAuction Z-score feature matrices and published anchored folds. The task predicts the benchmark's up, stationary, or down label at the ten-event horizon. The experiment tests across nine consecutive held-out days, with fixed hyperparameters and no tuning on test folds.
+
+| Model | Mean test-day macro-F1 (SD) | Pooled macro-F1 | Pooled log loss |
+|---|---:|---:|---:|
+| Training class prior | 0.186 (0.012) | 0.184 | 1.087 |
+| Logistic regression | 0.395 (0.034) | 0.402 | 1.042 |
+| Random forest | 0.474 (0.039) | **0.502** | 0.988 |
+| XGBoost | **0.478 (0.050)** | 0.496 | **0.959** |
+
+The equal-weight mean scores each day equally; pooled scores weight each event equally. That changes which model ranks first. All three classifiers beat the class-prior reference on these metrics, but the leaderboard is close between the tree models and their per-day scores move. The adjacent forward-horizon labels overlap, so event counts are not independent observations.
+
+![Held-out macro-F1 by FI-2010 anchored test day.](results/market_microstructure/walk_forward_macro_f1.png)
+
+The feature-shift diagnostic shows relatively small median PSI alongside very large 90th-percentile feature PSI in some folds. A small typical shift therefore coexists with substantial shifts in a subset of features.
+
+![Median and 90th-percentile feature population stability index across FI-2010 test days.](results/market_microstructure/feature_psi_by_day.png)
+
+## How the study was run
+
+### Daily volatility experiment
+
+- **Universe and period:** SPY, QQQ, IWM, TLT, and GLD; adjusted daily Yahoo Finance data from 2000 through the latest retrieved session, 2026-11-19. Forecast evaluation begins after the initial training period and available history; first forecast dates differ by asset.
+- **Target:** next-session absolute close-to-close log return, a noisy daily volatility proxy. Models are trained on next-session log squared return and transformed back to volatility units. Intraday realized volatility is not available in the free daily data.
+- **Inputs:** current and lagged returns, rolling volatility and mean absolute return over 5, 10, 21, and 63 sessions, volume change, and a missing-volume indicator. Features use information available at the forecast origin.
+- **Models:** 21-session historical volatility, linear regression, random forest, and XGBoost. Logistic regression is used separately for high-volatility event probabilities. LSTM and attention models were excluded because the daily sample is small and tabular baselines answer the main question with fewer tuning degrees of freedom.
+- **Validation:** 2,520-session initial training window, then non-overlapping 252-session test blocks in an expanding chronological walk-forward. No random shuffle. A SPY sensitivity run uses six-month test blocks.
+- **Metrics and inference:** pooled and year/fold MAE and RMSE, regime slices, and event log loss, Brier score, ROC-AUC, average precision, and calibration error. Paired absolute-error tests use a 21-session Newey-West/HAC standard error; Holm adjustment covers the 15 asset/model comparisons. Adjusted results are mixed and are described in the full report.
+
+### FI-2010 order-book experiment
+
+- **Data:** official FI-2010 benchmark, five Nasdaq Nordic stocks pooled in the released matrices, ten consecutive trading days in June 2010, 144 supplied features, and the ten-event-ahead three-class mid-price label.
+- **Validation:** published anchored folds CF_1–CF_9. Each fold trains on its past window and tests on the next day. Hyperparameters were fixed before test-fold evaluation.
+- **Models and metrics:** training class-prior reference, logistic regression, random forest, and XGBoost; macro-F1, balanced accuracy, log loss, multiclass Brier score, and feature population-stability diagnostics. Out-of-sample event predictions are retained for audit.
+
+## Reproduce the results
+
+Python 3.11–3.13 is supported by the project CI workflow. From a fresh checkout:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -e ".[download,notebooks,test,microstructure]"
+pytest -q
+python -m src.run_experiment --start 2000-01-01 --min-train-size 2520 --test-size 252
+python -m src.generate_report
+```
+
+Daily market prices are fetched from Yahoo Finance through `yfinance` and are not committed. Provider terms govern access and redistribution. Local run metadata records retrieval date, package versions, and per-asset data checksums. To run a smaller universe, use `--tickers SPY,QQQ`; to use a local price CSV, pass `--input-csv`, `--date-column`, and `--price-column`.
+
+The FI-2010 download and experiment are separate:
+
+```powershell
+python -m src.download_fi2010
+python -m src.market_microstructure
+python -m src.generate_microstructure_report
+```
+
+The download checks the source package and inner ZIP against published SHA-256 checksums. Raw daily prices and FI-2010 matrices stay outside Git; derived results, metadata, figures, and compressed held-out predictions are versioned.
+
+## Browse the repository
+
+| Path | Contents |
+|---|---|
+| [`src/`](src/) | Data preparation, features, models, walk-forward evaluation, and report generation |
+| [`tests/`](tests/) | Focused checks for preprocessing, targets, and chronological splits |
+| [`notebooks/`](notebooks/) | Exploration, feature engineering, and model evaluation notebooks |
+| [`results/`](results/) | Committed forecast tables, fold/year/regime metrics, figures, predictions, and run metadata |
+| [`results/market_microstructure/`](results/market_microstructure/) | FI-2010 fold scores, shift diagnostics, predictions, and companion report |
+| [`research_report.pdf`](research_report.pdf) | Full daily volatility research report |
+| [`output/pdf/future_market_ml_research.pdf`](output/pdf/future_market_ml_research.pdf) | Combined report with the FI-2010 companion |
+
+## Limitations and interpretation
+
+- Five ETF proxies and one vendor do not represent all markets. This is not a production feed or a current-market guarantee.
+- The daily target is noisy, and adjusted close data cannot reveal intraday or execution-level behavior. Asset histories differ.
+- Gains are modest, metric-dependent, and not consistent in every year. The analysis does not show that the learned signal is durable or that an ML model dominates the volatility baseline.
+- FI-2010 covers only ten trading days from 2010. The released matrices used here do not identify each row's stock, and overlapping labels make event-level results dependent. Its normalized features and benchmark design limit claims beyond this dataset.
+- Neither experiment simulates executable trades or measures fees, spread capture, latency, slippage, turnover, inventory, drawdown, or profitability.
+- Results depend on the frozen data snapshots and specified hyperparameters. Re-fetching vendor data later may change prices and metrics.
+
+## Data and code licenses
+
+Project code is licensed under the [MIT License](LICENSE). FI-2010 is separately licensed **CC BY 4.0**; the benchmark's attribution is recorded in its report and run metadata. Yahoo Finance data is not redistributed, and its provider terms apply. See the dataset record at [Fairdata Etsin](https://etsin.fairdata.fi/dataset/73eb48d7-4dbc-4a10-a52a-da745b47a649).
+
+## References
+
+- Qiu, Z., Kownatzki, C., Scalzo, F., and Cha, E.S. (2025). “Historical Perspectives in Volatility Forecasting Methods with Machine Learning.” *Risks*, 13(5), 98. [DOI](https://doi.org/10.3390/risks13050098).
+- Ntakaris, A., Magris, M., Kanniainen, J., Gabbouj, M., and Iosifidis, A. (2018). “Benchmark dataset for mid-price forecasting of limit order book data with machine learning methods.” *Journal of Forecasting*, 37(8), 852–866. [DOI](https://doi.org/10.1002/for.2543); [arXiv](https://arxiv.org/abs/1705.03233).
+- HRT, [Generalization in low signal-to-noise machine-learning benchmarks](https://www.hudsonrivertrading.com/hrtbeat/trading-machine-learning/).

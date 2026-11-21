@@ -1,0 +1,97 @@
+{
+  "dataset": "FI-2010 official Fairdata benchmark",
+  "dataset_id": "73eb48d7-4dbc-4a10-a52a-da745b47a649",
+  "license": "CC BY 4.0",
+  "package_sha256": "bcc89a5aa7d8067dda98374393444eb885a4283a41fd33e323496380e057e1a6",
+  "data_variant": "NoAuction, ZScore",
+  "features": 144,
+  "label_row_zero_based": 148,
+  "horizon_events": 10,
+  "label_mapping": {
+    "1": "up",
+    "2": "stationary",
+    "3": "down"
+  },
+  "folds": {
+    "1": {
+      "training_file": "Train_Dst_NoAuction_ZScore_CF_1.txt",
+      "test_file": "Test_Dst_NoAuction_ZScore_CF_1.txt",
+      "test_day": 2
+    },
+    "2": {
+      "training_file": "Train_Dst_NoAuction_ZScore_CF_2.txt",
+      "test_file": "Test_Dst_NoAuction_ZScore_CF_2.txt",
+      "test_day": 3
+    },
+    "3": {
+      "training_file": "Train_Dst_NoAuction_ZScore_CF_3.txt",
+      "test_file": "Test_Dst_NoAuction_ZScore_CF_3.txt",
+      "test_day": 4
+    },
+    "4": {
+      "training_file": "Train_Dst_NoAuction_ZScore_CF_4.txt",
+      "test_file": "Test_Dst_NoAuction_ZScore_CF_4.txt",
+      "test_day": 5
+    },
+    "5": {
+      "training_file": "Train_Dst_NoAuction_ZScore_CF_5.txt",
+      "test_file": "Test_Dst_NoAuction_ZScore_CF_5.txt",
+      "test_day": 6
+    },
+    "6": {
+      "training_file": "Train_Dst_NoAuction_ZScore_CF_6.txt",
+      "test_file": "Test_Dst_NoAuction_ZScore_CF_6.txt",
+      "test_day": 7
+    },
+    "7": {
+      "training_file": "Train_Dst_NoAuction_ZScore_CF_7.txt",
+      "test_file": "Test_Dst_NoAuction_ZScore_CF_7.txt",
+      "test_day": 8
+    },
+    "8": {
+      "training_file": "Train_Dst_NoAuction_ZScore_CF_8.txt",
+      "test_file": "Test_Dst_NoAuction_ZScore_CF_8.txt",
+      "test_day": 9
+    },
+    "9": {
+      "training_file": "Train_Dst_NoAuction_ZScore_CF_9.txt",
+      "test_file": "Test_Dst_NoAuction_ZScore_CF_9.txt",
+      "test_day": 10
+    }
+  },
+  "models": {
+    "logistic_regression": "C=0.1, lbfgs, max_iter=250",
+    "random_forest": "100 trees, max_depth=18, min_samples_leaf=30, max_features=sqrt, max_samples=0.5",
+    "xgboost": "240 trees, depth 5, learning_rate 0.06, fixed hyperparameters"
+  },
+  "training_seconds": {
+    "fold_1_logistic_regression": 1.9086082000285387,
+    "fold_1_random_forest": 4.617033499991521,
+    "fold_1_xgboost": 8.656633399892598,
+    "fold_2_logistic_regression": 2.973636799957603,
+    "fold_2_random_forest": 9.649230499984697,
+    "fold_2_xgboost": 13.088619299931452,
+    "fold_3_logistic_regression": 3.875487199984491,
+    "fold_3_random_forest": 14.052318200003356,
+    "fold_3_xgboost": 18.310981899965554,
+    "fold_4_logistic_regression": 5.432595799909905,
+    "fold_4_random_forest": 29.19846670003608,
+    "fold_4_xgboost": 26.71237360010855,
+    "fold_5_logistic_regression": 6.291417500004172,
+    "fold_5_random_forest": 32.59796030004509,
+    "fold_5_xgboost": 28.35300930007361,
+    "fold_6_logistic_regression": 7.055501299910247,
+    "fold_6_random_forest": 33.67181139998138,
+    "fold_6_xgboost": 33.23813569988124,
+    "fold_7_logistic_regression": 8.198237899923697,
+    "fold_7_random_forest": 40.1133665998932,
+    "fold_7_xgboost": 37.772256300086156,
+    "fold_8_logistic_regression": 10.195669899927452,
+    "fold_8_random_forest": 58.22441009990871,
+    "fold_8_xgboost": 48.81418889993802,
+    "fold_9_logistic_regression": 20.21466140006669,
+    "fold_9_random_forest": 61.517951800022274,
+    "fold_9_xgboost": 57.67470149998553
+  },
+  "timestamp_utc": "2026-11-21T21:22:53.634833+00:00"
+}

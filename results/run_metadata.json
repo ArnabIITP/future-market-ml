@@ -1,0 +1,58 @@
+{
+  "tickers": [
+    "SPY",
+    "QQQ",
+    "IWM",
+    "TLT",
+    "GLD"
+  ],
+  "data_sources": {
+    "SPY": "Yahoo Finance via yfinance; auto_adjust=True (local snapshot)",
+    "QQQ": "Yahoo Finance via yfinance; auto_adjust=True (local snapshot)",
+    "IWM": "Yahoo Finance via yfinance; auto_adjust=True (local snapshot)",
+    "TLT": "Yahoo Finance via yfinance; auto_adjust=True (local snapshot)",
+    "GLD": "Yahoo Finance via yfinance; auto_adjust=True (local snapshot)"
+  },
+  "download_start": "2000-01-01",
+  "download_end_exclusive": null,
+  "retrieved_at_utc": "2026-11-21T20:17:11.346675+00:00",
+  "usable_observations_by_ticker": {
+    "SPY": 6699,
+    "QQQ": 6699,
+    "IWM": 6598,
+    "TLT": 6055,
+    "GLD": 5473
+  },
+  "first_forecast_date_by_ticker": {
+    "SPY": "2010-04-13 00:00:00",
+    "QQQ": "2010-04-13 00:00:00",
+    "IWM": "2010-09-03 00:00:00",
+    "TLT": "2012-10-31 00:00:00",
+    "GLD": "2015-02-25 00:00:00"
+  },
+  "last_observation_date_by_ticker": {
+    "SPY": "2026-11-19 00:00:00",
+    "QQQ": "2026-11-19 00:00:00",
+    "IWM": "2026-11-19 00:00:00",
+    "TLT": "2026-11-19 00:00:00",
+    "GLD": "2026-11-19 00:00:00"
+  },
+  "initial_train_size": 2520,
+  "test_size_sessions": 252,
+  "random_seed": 17,
+  "target": "next-session absolute close-to-close log return; regression models trained on log squared return",
+  "data_sha256_by_ticker": {
+    "SPY": "4bb6093aa6c17b98dee195320e61063fdf58fdd23828ae0131b26fc4bd80c470",
+    "QQQ": "3f0d5c76762de21ce68bd5912dcdfb82ffa1af632408359263e541dd38853102",
+    "IWM": "c5b43db205dde6b1a39d404baf986c4eafbc7a2af97393a9dc97a5ec3c3c189b",
+    "TLT": "30228a1bf6880c4c3d53c7c80570696cc912ff579617cd40e0ff646c22ba229e",
+    "GLD": "7ffde060f4fbaeb437a3ff5035102fab1f707fc53826605bf47f28edaa615c63"
+  },
+  "packages": {
+    "numpy": "2.2.3",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.6.1",
+    "xgboost": "3.1.2",
+    "yfinance": "1.4.1"
+  }
+}
