@@ -10,6 +10,7 @@ FUTURE is a reproducible financial machine-learning study built around that ques
 |---|---|---|
 | **Daily volatility (primary)** | Five liquid US-listed ETFs; expanding-window forecasts from 2010–2026 | ML lowers MAE versus historical volatility for four of five assets, but raises RMSE for all five. Gains are modest and vary by asset and year. |
 | **Limit-order-book (companion)** | FI-2010; nine anchored test days, 354,825 held-out events | Models beat the class-prior baseline, but the top model changes with aggregation and scores vary across days. |
+| **Raw-event engineering demo** | Official LOBSTER message/book samples; five Nasdaq stocks, one session | A C++ feature path and purged chronological classifier run end to end. A simple taker-touch counterfactual loses before fees, showing that label skill alone is not a trading edge. |
 
 ## What the results say
 
@@ -17,7 +18,9 @@ FUTURE is a reproducible financial machine-learning study built around that ques
 
 The FI-2010 companion adds a faster market-microstructure task. Its classifiers substantially beat a training-class-prior baseline, yet random forest leads on pooled macro-F1 while XGBoost leads on the equal-weight mean across test days and on pooled log loss. This benchmark demonstrates learnable structure in its supplied features; its ten-day span cannot establish a durable signal for modern electronic markets.
 
-These are forecasting experiments, **not evidence of a profitable strategy**. No transaction simulation, fees, slippage, latency, turnover, inventory, or P&L is modeled.
+A separate raw-event demonstration processes LOBSTER message and five-level order-book files for five Nasdaq stocks. Several models improve macro-F1 on this single-session sample, though the gains are not consistent across every model and stock. Their one-share taker-touch counterfactual has negative gross results before fees. This is a useful check against confusing classification scores with tradable returns, not evidence about persistence across days.
+
+The daily-volatility and FI-2010 sections are forecasting experiments, **not evidence of a profitable strategy**. Only the separate LOBSTER demonstration includes a simplified execution-cost counterfactual, with the limitations described below.
 
 ## Primary result: daily volatility forecasting
 
@@ -70,6 +73,48 @@ The feature-shift diagnostic shows relatively small median PSI alongside very la
 
 ![Median and 90th-percentile feature population stability index across FI-2010 test days.](results/market_microstructure/feature_psi_by_day.png)
 
+## Raw-event engineering and execution reality check
+
+FI-2010 is distributed as normalized feature matrices, so it cannot support an order-entry or fill simulation. To exercise a raw message path, the project now includes LOBSTER's publicly posted five-level message and order-book samples for AAPL, AMZN, GOOG, INTC, and MSFT on 2012-06-21. The C++17 program reads aligned event and book rows, checks their structure and market state, and emits compact features for spread, queue imbalance, order-flow imbalance, and signed event flow. It processed about 1.75 million rows at roughly 425,000–461,000 rows per second in this local Windows run. This is buffered file-processing throughput, not exchange latency or production performance.
+
+Each stock uses the first 70% of its session for training and the final 30% for testing. The last 100 training events are purged because the label looks 100 events ahead. Macro-F1 is emphasized because the session's class distribution is strongly imbalanced.
+
+| Stock | Best macro-F1 model on this test slice | Macro-F1 | Training class-prior macro-F1 |
+|---|---|---:|---:|
+| AAPL | Random forest | 0.389 | 0.219 |
+| AMZN | Random forest | 0.392 | 0.216 |
+| GOOG | Engineered logistic regression | 0.397 | 0.223 |
+| INTC | XGBoost | 0.402 | 0.326 |
+| MSFT | XGBoost | 0.504 | 0.322 |
+
+These are descriptive rankings on the reported test slices; they are not a separate model-selection validation.
+
+The cost check uses a fixed prediction rule: enter one share at the next event's displayed best price, exit at the opposite best price 100 events after the signal, and prevent overlapping positions. It assumes 0, 5, or 10 basis points of fees per side. The spread crossing is included in gross results.
+
+| Model | Test trades | Mean gross bps/trade | Mean net bps/trade at 5 bps/side |
+|---|---:|---:|---:|
+| XGBoost | 2,262 | -2.67 | -12.67 |
+| Random forest | 4,296 | -3.15 | -13.15 |
+| Engineered logistic regression | 4,634 | -3.24 | -13.24 |
+| Queue-imbalance logistic regression | 4,352 | -3.45 | -13.45 |
+| Training class prior | 1,692 | -3.13 | -13.13 |
+
+Every model loses on this simple taker-touch counterfactual before fees. The result is deliberately reported because the stronger classification scores do not translate into positive gross performance here.
+
+![Macro-F1 by stock on the one-day chronological holdout.](results/market_microstructure/lobster_sample/chronological_macro_f1.png)
+
+![Mean net bps per trade under fee scenarios; the zero-fee case is already negative.](results/market_microstructure/lobster_sample/taker_touch_fee_sensitivity.png)
+
+This is not a full execution simulator: it assumes a one-share fill at displayed top-of-book, with no market impact, queue priority, or measured latency beyond waiting for the next event. It covers one historical day and cannot establish stability. Raw sample files are not committed. See the [official sample source](https://php.lobsterdata.com/info/DataSamples.php), [access options](https://php.lobsterdata.com/info/AccessOptions.php), and [terms](https://php.lobsterdata.com/termsAndConditions.php).
+
+Run the raw-event demonstration after installing the microstructure extras and a C++17 compiler:
+
+```powershell
+python -m src.run_lobster_sample
+```
+
+It verifies the official sample ZIP hashes and writes aggregate results, metadata, and figures to [`results/market_microstructure/lobster_sample/`](results/market_microstructure/lobster_sample/). The sample archives and extracted files remain under git-ignored `data/`.
+
 ## How the study was run
 
 ### Daily volatility experiment
@@ -120,7 +165,9 @@ The download checks the source package and inner ZIP against published SHA-256 c
 | [`tests/`](tests/) | Focused checks for preprocessing, targets, and chronological splits |
 | [`notebooks/`](notebooks/) | Exploration, feature engineering, and model evaluation notebooks |
 | [`results/`](results/) | Committed forecast tables, fold/year/regime metrics, figures, predictions, and run metadata |
-| [`results/market_microstructure/`](results/market_microstructure/) | FI-2010 fold scores, shift diagnostics, predictions, and companion report |
+| [`results/market_microstructure/`](results/market_microstructure/) | FI-2010 fold scores, shift diagnostics, predictions, and the raw-event sample report |
+| [`results/market_microstructure/lobster_sample/`](results/market_microstructure/lobster_sample/) | Per-stock metrics, taker-touch cost sensitivity, metadata, and charts |
+| [`src/lobster_features.cpp`](src/lobster_features.cpp) | C++17 feature extraction from aligned LOBSTER event and book samples |
 | [`research_report.pdf`](research_report.pdf) | Full daily volatility research report |
 | [`output/pdf/future_market_ml_research.pdf`](output/pdf/future_market_ml_research.pdf) | Combined report with the FI-2010 companion |
 

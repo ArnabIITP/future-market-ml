@@ -1,0 +1,112 @@
+{
+  "dataset": "Official LOBSTER five-level public sample files",
+  "source_url": "https://php.lobsterdata.com/info/DataSamples.php",
+  "date": "2012-06-21",
+  "tickers": [
+    "AMZN",
+    "AAPL",
+    "GOOG",
+    "INTC",
+    "MSFT"
+  ],
+  "archive_sha256": {
+    "AMZN": "23290152d0a588359ac59a969d385748112de5733065c81f5ba3ae9d770f74db",
+    "AAPL": "46419dd0d6106be5fcf43600ccd08b2baa5d4cfb76284f1c58773537a3adac50",
+    "GOOG": "a1146b74a3951cc34a8571c75940b7fd498445e48949123cae88a29a4e8b5441",
+    "INTC": "2c76234e46906591598b893c5bab853f67e956c1520171b36f7df644dc35c96e",
+    "MSFT": "94e65c07786b8d54712fe9a12aee29d51f418d402e96b6e21b4af1d0bd44131d"
+  },
+  "events_per_symbol": {
+    "AMZN": 155935,
+    "AAPL": 301587,
+    "GOOG": 112673,
+    "INTC": 581030,
+    "MSFT": 595800
+  },
+  "target": "mid-price direction over the next 100 book events; flat when the move is within half a cent (50 LOBSTER price units)",
+  "horizon_events": 100,
+  "chronological_train_fraction": 0.7,
+  "purged_train_events": 100,
+  "feature_extraction_runtime_seconds_by_symbol": {
+    "AMZN": {
+      "events": 155935.0,
+      "parser_seconds": 0.36487,
+      "parser_events_per_second": 427371.0,
+      "end_to_end_seconds": 0.9087685998529196
+    },
+    "AAPL": {
+      "events": 301587.0,
+      "parser_seconds": 0.687747,
+      "parser_events_per_second": 438514.0,
+      "end_to_end_seconds": 0.7360068999696523
+    },
+    "GOOG": {
+      "events": 112673.0,
+      "parser_seconds": 0.264915,
+      "parser_events_per_second": 425318.0,
+      "end_to_end_seconds": 0.3046176000498235
+    },
+    "INTC": {
+      "events": 581030.0,
+      "parser_seconds": 1.3123,
+      "parser_events_per_second": 442756.0,
+      "end_to_end_seconds": 1.356138899922371
+    },
+    "MSFT": {
+      "events": 595800.0,
+      "parser_seconds": 1.29334,
+      "parser_events_per_second": 460667.0,
+      "end_to_end_seconds": 1.3378435000777245
+    }
+  },
+  "compiler": "g++/clang++ C++17 -O3",
+  "runtime_platform": "Windows-11-10.0.26300-SP0",
+  "feature_output": "little-endian float64 records; column order defined by FEATURE_COLUMNS in src/run_lobster_sample.py",
+  "limitations": [
+    "one sample trading day only",
+    "not a distribution-shift or persistence claim",
+    "taker-touch counterfactual is not a full execution model"
+  ],
+  "feature_columns": [
+    "time_seconds",
+    "event_type",
+    "order_size",
+    "direction",
+    "signed_event_size",
+    "mid_ticks",
+    "spread_ticks",
+    "best_bid_ticks",
+    "best_ask_ticks",
+    "bid_size_1",
+    "ask_size_1",
+    "queue_imbalance_l1",
+    "queue_imbalance_5",
+    "ofi_l1"
+  ],
+  "models": {
+    "training_class_prior": "training-window class frequencies",
+    "queue_imbalance_logistic": "C=0.1, balanced classes, top-level and five-level queue imbalance",
+    "engineered_logistic": "C=0.1, balanced classes, standardized seven-feature set",
+    "random_forest": "150 trees, max_depth=12, min_samples_leaf=50, balanced_subsample",
+    "xgboost": "120 trees, max_depth=4, learning_rate=0.05, fixed parameters"
+  },
+  "strategy_counterfactual": {
+    "decision": "take the predicted up/down class; skip predicted stationary",
+    "entry": "one share at the next event displayed best price",
+    "exit": "opposite displayed best price 100 events after the signal",
+    "position_overlap": "prevented; next signal is considered after the prior exit",
+    "fees_bps_per_side": [
+      0.0,
+      5.0,
+      10.0
+    ],
+    "limits": "no market impact or queue model; one-day scenarios, not production fills or profitability evidence"
+  },
+  "timestamp_utc": "2026-11-21T22:50:35.308224+00:00",
+  "package_versions": {
+    "numpy": "2.2.3",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.6.1",
+    "xgboost": "3.1.2"
+  }
+}
