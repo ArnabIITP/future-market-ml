@@ -20,6 +20,16 @@ The FI-2010 companion adds a faster market-microstructure task. Its classifiers 
 
 A separate raw-event demonstration processes LOBSTER message and five-level order-book files for five Nasdaq stocks. Several models improve macro-F1 on this single-session sample, though the gains are not consistent across every model and stock. The expanded five-level execution sensitivity has negative gross results before fees across the tested delays and sizes. This is a useful check against confusing classification scores with tradable returns, not evidence about persistence across days.
 
+### Multi-session raw order-book study
+
+The companion Nasdaq BX ITCH study extends the raw-event work across eight separate sessions and uses a chronological train/validation/final split. It reconstructs AAPL, MSFT, and INTC books from official ITCH messages, samples the top of book every 100 ms, and predicts the three-class mid-price move one second ahead. The final test contains 2.1 million overlapping snapshots over three reserved dates; those rows are not independent statistical observations.
+
+The preselected XGBoost model achieved mean final-period log loss **0.668**, versus **0.798** for a training class-prior forecast, and beat that reference on all three dates. Its mean macro-F1 was **0.348**; the random forest scored higher at **0.399**, illustrating that model rankings depend on the metric. The selected model's log loss rose from 0.541–0.556 on the first two final sessions to 0.907 on March 2, 2020. Its calibration also worsened for AAPL and MSFT that day. This is evidence of useful probabilistic structure in this sample, with visible regime sensitivity—not proof of a stable trading signal.
+
+The order-level passive replay is a separate reality check. Under 1, 10, and 50 ms delays, XGBoost had a **0.143–0.169% entry-fill rate** and a fill-weighted gross marked result of **−39.60 bps per filled order** across those scenarios before fees. At 1 ms, the gross result was −41.07 bps per filled order; 1 and 5 bps per-side fees reduce it to −43.07 and −51.07 bps. The result does not support profitability. It does show why predictive scores need to be tested against queue position, latency, fill scarcity, and costs.
+
+The results and evidence are visible without opening a notebook: [full multi-session report](results/nasdaq_bx_itch/report.md), [final-period model comparison](results/nasdaq_bx_itch/figures/final_test_model_scores.png), [distribution-shift diagnostics](results/nasdaq_bx_itch/figures/final_test_feature_shift.png), [queue and delay sensitivity](results/nasdaq_bx_itch/figures/final_test_queue_stress.png), and [PDF report](output/pdf/nasdaq_bx_multisession_report.pdf). The frozen split, settings, source hashes, and final evaluation hashes are in [the protocol lock](results/nasdaq_bx_itch/protocol_lock.json) and [data provenance record](results/nasdaq_bx_itch/data_provenance.json).
+
 The daily-volatility and FI-2010 sections are forecasting experiments, **not evidence of a profitable strategy**. Only the separate LOBSTER demonstration includes a simplified execution-cost counterfactual, with the limitations described below.
 
 ## Primary result: daily volatility forecasting
@@ -172,6 +182,8 @@ python -m src.generate_microstructure_report
 
 The download checks the source package and inner ZIP against published SHA-256 checksums. Raw daily prices and FI-2010 matrices stay outside Git; derived results, metadata, figures, and compressed held-out predictions are versioned.
 
+The multi-session Nasdaq BX study has its own end-to-end reproduction commands and caveats in [its report](results/nasdaq_bx_itch/report.md) and [frozen protocol](docs/nasdaq_bx_protocol.md). The raw exchange archives and reconstructed order-event logs are not committed; download them only under Nasdaq's applicable terms. Its final holdout is intentionally a one-run evaluation.
+
 ## Browse the repository
 
 | Path | Contents |
@@ -184,6 +196,10 @@ The download checks the source package and inner ZIP against published SHA-256 c
 | [`results/market_microstructure/`](results/market_microstructure/) | FI-2010 fold scores, uncertainty analysis, shift diagnostics, predictions, and companion report |
 | [`results/market_microstructure/lobster_sample/`](results/market_microstructure/lobster_sample/) | Per-stock metrics, taker and passive queue sensitivities, metadata, and charts |
 | [`results/market_microstructure/report.pdf`](results/market_microstructure/report.pdf) | FI-2010 companion report with day-block uncertainty analysis |
+| [`results/nasdaq_bx_itch/report.md`](results/nasdaq_bx_itch/report.md) | Multi-session raw ITCH findings, per-date scores, calibration, shift, queue replay, and limits |
+| [`output/pdf/nasdaq_bx_multisession_report.pdf`](output/pdf/nasdaq_bx_multisession_report.pdf) | Three-part report on model scores, distribution shift, and queue-aware execution |
+| [`docs/nasdaq_bx_protocol.md`](docs/nasdaq_bx_protocol.md) | Data schema, session split, reconstruction protocol, and limits |
+| [`src/nasdaq_itch_study.py`](src/nasdaq_itch_study.py) and [`src/nasdaq_queue_simulation.py`](src/nasdaq_queue_simulation.py) | ITCH parsing pipeline, frozen evaluation, and public-order-ID queue replay |
 | [`src/lobster_features.cpp`](src/lobster_features.cpp) | C++17 feature extraction from aligned LOBSTER event and book samples |
 | [`research_report.pdf`](research_report.pdf) | Full daily volatility research report |
 | [`output/pdf/future_market_ml_research.pdf`](output/pdf/future_market_ml_research.pdf) | Combined report with the FI-2010 companion |
@@ -195,6 +211,7 @@ The download checks the source package and inner ZIP against published SHA-256 c
 - Gains are modest, metric-dependent, and not consistent in every year. The analysis does not show that the learned signal is durable or that an ML model dominates the volatility baseline.
 - FI-2010 covers only ten trading days from 2010. The released matrices used here do not identify each row's stock, and overlapping labels make event-level results dependent. Its normalized features and benchmark design limit claims beyond this dataset.
 - The daily-volatility and FI-2010 experiments do not simulate executable trades. The LOBSTER taker sweep and passive queue-ahead proxy are one-day counterfactuals; the latter is not exact FIFO replay. Neither measures real latency or participant-specific fees, models impact beyond the visible depth, or establishes profitability.
+- The expanded Nasdaq BX study uses eight nonconsecutive sample sessions from 2019–2020, three stocks, and one venue. Only three dates are held out; per-date performance and PSI are descriptive, with no claim of statistical significance or persistence across modern market regimes. Its order-ID replay models queue ahead from public messages, but omits hidden liquidity, exchange acknowledgement/clock behavior, market impact, and participant-specific fee/rebate schedules.
 - Results depend on the frozen data snapshots and specified hyperparameters. Re-fetching vendor data later may change prices and metrics.
 
 ## Data and code licenses

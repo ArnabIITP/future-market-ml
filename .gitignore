@@ -8,6 +8,7 @@ __pycache__/
 *.egg-info/
 data/*
 !data/.gitkeep
+results/nasdaq_bx_itch/*_predictions.parquet
 tmp/
 .env
 .env.*

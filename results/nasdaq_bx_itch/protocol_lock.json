@@ -1,0 +1,147 @@
+{
+  "study": "multi-session Nasdaq BX ITCH 5.0 prediction under temporal shift",
+  "locked_utc": "2026-11-22T14:59:06.120911+00:00",
+  "train_sessions": [
+    "2019-01-30",
+    "2019-05-30",
+    "2019-07-30"
+  ],
+  "validation_sessions": [
+    "2019-08-30",
+    "2019-10-30"
+  ],
+  "untouched_test_sessions": [
+    "2019-12-30",
+    "2020-01-30",
+    "2020-03-02"
+  ],
+  "symbols": [
+    "AAPL",
+    "MSFT",
+    "INTC"
+  ],
+  "snapshot_interval_ns": 100000000,
+  "target_horizon_snapshots": 10,
+  "target_horizon_ms": 1000.0,
+  "flat_threshold_price_units": 100,
+  "primary_selection_metric": "mean validation log loss per day and symbol; macro-F1 tie-break",
+  "selected_model": "xgboost",
+  "feature_sets": {
+    "queue_imbalance_logistic": [
+      "imbalance_l1",
+      "imbalance_5"
+    ],
+    "engineered_logistic": [
+      "spread_bps",
+      "imbalance_l1",
+      "imbalance_5",
+      "microprice_offset_bps",
+      "mid_return_1",
+      "mid_return_10",
+      "mid_return_50",
+      "realized_vol_1s",
+      "time_of_day_sin",
+      "time_of_day_cos",
+      "ticker_AAPL",
+      "ticker_MSFT"
+    ],
+    "random_forest": [
+      "spread_bps",
+      "imbalance_l1",
+      "imbalance_5",
+      "microprice_offset_bps",
+      "mid_return_1",
+      "mid_return_10",
+      "mid_return_50",
+      "realized_vol_1s",
+      "time_of_day_sin",
+      "time_of_day_cos",
+      "ticker_AAPL",
+      "ticker_MSFT"
+    ],
+    "xgboost": [
+      "spread_bps",
+      "imbalance_l1",
+      "imbalance_5",
+      "microprice_offset_bps",
+      "mid_return_1",
+      "mid_return_10",
+      "mid_return_50",
+      "realized_vol_1s",
+      "time_of_day_sin",
+      "time_of_day_cos",
+      "ticker_AAPL",
+      "ticker_MSFT"
+    ]
+  },
+  "model_parameters": {
+    "queue_imbalance_logistic": "StandardScaler; balanced LogisticRegression C=0.05, max_iter=300",
+    "engineered_logistic": "StandardScaler; balanced LogisticRegression C=0.05, max_iter=300",
+    "random_forest": "180 trees, depth 12, leaf 60, sqrt features, balanced_subsample, n_jobs=1",
+    "xgboost": "180 trees, depth 4, learning_rate 0.05, min_child_weight 50, fixed settings"
+  },
+  "random_seed": 2026,
+  "software_versions": {
+    "numpy": "2.2.3",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.6.1",
+    "xgboost": "3.1.2",
+    "meatpy": "0.5.0",
+    "pyarrow": "23.0.1"
+  },
+  "metrics": [
+    "macro_f1",
+    "log_loss",
+    "multiclass_brier"
+  ],
+  "calibration_metric": "10-bin top-label expected calibration error (descriptive)",
+  "passive_execution": {
+    "order_shares": 10,
+    "entry_delays_ms": [
+      1,
+      10,
+      50
+    ],
+    "order_lifetime_ms": 1000,
+    "fees_bps_per_side": [
+      0,
+      1,
+      5
+    ],
+    "non_overlapping_positions_per_symbol": true,
+    "queue_ahead": "exact public order IDs at the posted price; executions, cancels, deletes, and replaces reduce ahead",
+    "exit": "sweep five displayed levels; residual marked to mid"
+  },
+  "implementation_sha256": "67bc99242ccb90e27408ac44b38efbc628951e1948edc4fcbacc524c56e50f9a",
+  "validation_rank": [
+    {
+      "model": "xgboost",
+      "validation_log_loss": 0.5490981544958776,
+      "validation_macro_f1": 0.3665232993459291,
+      "validation_brier": 0.29268468742002085
+    },
+    {
+      "model": "random_forest",
+      "validation_log_loss": 0.9684685447367992,
+      "validation_macro_f1": 0.3670764804100172,
+      "validation_brier": 0.5861308227891593
+    },
+    {
+      "model": "engineered_logistic",
+      "validation_log_loss": 1.0776026757380615,
+      "validation_macro_f1": 0.2793999084512095,
+      "validation_brier": 0.6403126612595257
+    },
+    {
+      "model": "queue_imbalance_logistic",
+      "validation_log_loss": 1.1229041806399547,
+      "validation_macro_f1": 0.2937108315781003,
+      "validation_brier": 0.6882558652291979
+    }
+  ],
+  "final_test_will_be_run_once_after_this_lock": true,
+  "final_test_evaluation_utc": "2026-11-22T15:24:02.294159+00:00",
+  "final_test_predictions_sha256": "a5ef3aee1da7ae153a7bbd4a1814b6084a55fe2a5061f3fbd254ecc7c94cad4f",
+  "final_test_metrics_sha256": "2e94df9763eb3aa040f6f4619ece27e2fb146f4e08801789b2dfae34d80adc69",
+  "final_test_used_for_model_selection": false
+}

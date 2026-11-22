@@ -1,0 +1,5 @@
+{
+  "evaluated_once": true,
+  "selected_model": "xgboost",
+  "results": "final_test_by_day.csv"
+}

@@ -1,0 +1,74 @@
+{
+  "2019-01-30": {
+    "session_date": "2019-01-30",
+    "filename": "20190130.BX_ITCH_50.gz",
+    "url": "https://emi.nasdaq.com/ITCH/Nasdaq%20BX%20ITCH/20190130.BX_ITCH_50.gz",
+    "expected_bytes": 1097205622,
+    "split": "train",
+    "local_path": "data/nasdaq_bx_itch/raw/20190130.BX_ITCH_50.gz",
+    "sha256": "b581ad9a3b2cea24927b54bf977c12484e20c047b0aed2d3fa46deea9fc2812c"
+  },
+  "2019-05-30": {
+    "session_date": "2019-05-30",
+    "filename": "20190530.BX_ITCH_50.gz",
+    "url": "https://emi.nasdaq.com/ITCH/Nasdaq%20BX%20ITCH/20190530.BX_ITCH_50.gz",
+    "expected_bytes": 497884404,
+    "split": "train",
+    "local_path": "data/nasdaq_bx_itch/raw/20190530.BX_ITCH_50.gz",
+    "sha256": "793487f77c92bd9964080bb5053862541eb793f912f7f9ffe908bea46faaf3dc"
+  },
+  "2019-07-30": {
+    "session_date": "2019-07-30",
+    "filename": "20190730.BX_ITCH_50.gz",
+    "url": "https://emi.nasdaq.com/ITCH/Nasdaq%20BX%20ITCH/20190730.BX_ITCH_50.gz",
+    "expected_bytes": 391242214,
+    "split": "train",
+    "local_path": "data/nasdaq_bx_itch/raw/20190730.BX_ITCH_50.gz",
+    "sha256": "a0a057010cc5172cfaf2d8a7b4d5f133557fa47b3a5837fcf985b6e5533e50eb"
+  },
+  "2019-08-30": {
+    "session_date": "2019-08-30",
+    "filename": "20190830.BX_ITCH_50.gz",
+    "url": "https://emi.nasdaq.com/ITCH/Nasdaq%20BX%20ITCH/20190830.BX_ITCH_50.gz",
+    "expected_bytes": 449303567,
+    "split": "validation",
+    "local_path": "data/nasdaq_bx_itch/raw/20190830.BX_ITCH_50.gz",
+    "sha256": "99b08ce5e0e860246e1d6716394513a06845ed632c8dc838b807d43f4c756fa0"
+  },
+  "2019-10-30": {
+    "session_date": "2019-10-30",
+    "filename": "20191030.BX_ITCH_50.gz",
+    "url": "https://emi.nasdaq.com/ITCH/Nasdaq%20BX%20ITCH/20191030.BX_ITCH_50.gz",
+    "expected_bytes": 403851104,
+    "split": "validation",
+    "local_path": "data/nasdaq_bx_itch/raw/20191030.BX_ITCH_50.gz",
+    "sha256": "0dca86f76483fdef6070a791c39085ddf6a4d8bdbf51440bf69162cdb747371e"
+  },
+  "2019-12-30": {
+    "session_date": "2019-12-30",
+    "filename": "20191230.BX_ITCH_50.gz",
+    "url": "https://emi.nasdaq.com/ITCH/Nasdaq%20BX%20ITCH/20191230.BX_ITCH_50.gz",
+    "expected_bytes": 390561039,
+    "split": "test",
+    "local_path": "data/nasdaq_bx_itch/raw/20191230.BX_ITCH_50.gz",
+    "sha256": "b7a56dafeaa8300308e24828b21f5595909b0fff3b5182b5c2f160917f76302f"
+  },
+  "2020-01-30": {
+    "session_date": "2020-01-30",
+    "filename": "20200130.BX_ITCH_50.gz",
+    "url": "https://emi.nasdaq.com/ITCH/Nasdaq%20BX%20ITCH/20200130.BX_ITCH_50.gz",
+    "expected_bytes": 721906618,
+    "split": "test",
+    "local_path": "data/nasdaq_bx_itch/raw/20200130.BX_ITCH_50.gz",
+    "sha256": "88441729b65575d518b3e9132925a91f994182af9b5b45b60218296be0c257a8"
+  },
+  "2020-03-02": {
+    "session_date": "2020-03-02",
+    "filename": "S030220-v50-bx.txt.gz",
+    "url": "https://emi.nasdaq.com/ITCH/Nasdaq%20BX%20ITCH/March%2020/S030220-v50-bx.txt.gz",
+    "expected_bytes": 1503031926,
+    "split": "test",
+    "local_path": "data/nasdaq_bx_itch/raw/S030220-v50-bx.txt.gz",
+    "sha256": "e331739ab0345c8183fde1a465f2935477fa569c3943ee012df1207831a35d94"
+  }
+}
