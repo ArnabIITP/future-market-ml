@@ -113,13 +113,19 @@ int main(int argc, char** argv) {
 
         const double time = as_double(m[0], message_path, rows + 1, "time");
         const double raw_event_type = as_double(m[1], message_path, rows + 1, "event type");
+        const double raw_order_id = as_double(m[2], message_path, rows + 1, "order id");
+        const double raw_event_price = as_double(m[4], message_path, rows + 1, "event price");
         const double raw_direction = as_double(m[5], message_path, rows + 1, "direction");
-        if (std::floor(raw_event_type) != raw_event_type || std::floor(raw_direction) != raw_direction)
-            throw std::runtime_error("non-integer event type or direction at row " + std::to_string(rows + 1));
+        if (std::floor(raw_event_type) != raw_event_type || std::floor(raw_direction) != raw_direction ||
+            std::floor(raw_order_id) != raw_order_id || std::floor(raw_event_price) != raw_event_price)
+            throw std::runtime_error("non-integer event type, order id, price, or direction at row " + std::to_string(rows + 1));
         const int event_type = static_cast<int>(raw_event_type);
         const double size = as_double(m[3], message_path, rows + 1, "size");
         const int direction = static_cast<int>(raw_direction);
-        if (time < previous_time || size < 0 || (direction != -1 && direction != 1))
+        const bool known_event = event_type >= 1 && event_type <= 7;
+        const bool valid_event_price = event_type == 7 ? raw_event_price >= -1 && raw_event_price <= 1 : raw_event_price > 0;
+        if (time < previous_time || size < 0 || raw_order_id < 0 || !known_event || !valid_event_price ||
+            (direction != -1 && direction != 1))
             throw std::runtime_error("non-monotone time or invalid event fields at row " + std::to_string(rows + 1));
         previous_time = time;
 
@@ -157,13 +163,20 @@ int main(int argc, char** argv) {
             else ofi += previous_ask_size;
         }
 
-        const std::array<double, 14> record{
+        std::array<double, 36> record{
             time, static_cast<double>(event_type), size, static_cast<double>(direction),
             signed_event_size, (ask_price[0] + bid_price[0]) / 2.0,
             ask_price[0] - bid_price[0], bid_price[0], ask_price[0],
             bid_size[0], ask_size[0], queue_imbalance(bid_size[0], ask_size[0]),
-            queue_imbalance(bid_depth, ask_depth), ofi,
+            queue_imbalance(bid_depth, ask_depth), ofi, raw_order_id, raw_event_price,
         };
+        for (std::size_t level = 0; level < 5; ++level) {
+            const std::size_t offset = 16 + level * 4;
+            record[offset] = ask_price[level];
+            record[offset + 1] = ask_size[level];
+            record[offset + 2] = bid_price[level];
+            record[offset + 3] = bid_size[level];
+        }
         output_buffer.insert(output_buffer.end(), record.begin(), record.end());
         if (output_buffer.size() >= (1 << 20) / sizeof(double)) {
             output.write(reinterpret_cast<const char*>(output_buffer.data()),

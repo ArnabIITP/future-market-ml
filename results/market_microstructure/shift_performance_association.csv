@@ -1,0 +1,4 @@
+model,test_days,spearman_psi_macro_f1,spearman_psi_log_loss,note
+logistic_regression,9,0.000000,0.383333,Descriptive rank association only; nine days do not support causal or stable-shift claims.
+random_forest,9,-0.133333,0.433333,Descriptive rank association only; nine days do not support causal or stable-shift claims.
+xgboost,9,-0.016667,0.416667,Descriptive rank association only; nine days do not support causal or stable-shift claims.

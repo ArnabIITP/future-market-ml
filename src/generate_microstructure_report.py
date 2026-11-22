@@ -18,6 +18,7 @@ from reportlab.platypus import (Image, KeepTogether, PageBreak, Paragraph,
                                 SimpleDocTemplate, Spacer, Table, TableStyle)
 
 from src.market_microstructure import CLASS_LABELS, evaluate, feature_psi_by_fold, load_matrix
+from src.microstructure_inference import build_inference
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -96,7 +97,9 @@ def make_figures(fold_metrics: pd.DataFrame, shift: pd.DataFrame, predictions: p
     plt.close(fig)
 
 
-def write_markdown(fold_metrics: pd.DataFrame, pooled: pd.DataFrame, shifts: pd.DataFrame, metadata: dict) -> str:
+def write_markdown(fold_metrics: pd.DataFrame, pooled: pd.DataFrame, shifts: pd.DataFrame,
+                   metadata: dict, inference: pd.DataFrame,
+                   shift_association: pd.DataFrame) -> str:
     mean_scores = fold_metrics.groupby("model").agg(mean_macro_f1=("macro_f1", "mean"), sd_macro_f1=("macro_f1", "std"), mean_log_loss=("log_loss", "mean")).reset_index()
     joined = mean_scores.merge(pooled, on="model", suffixes=("_daymean", "_pooled"))
     joined = joined.sort_values("mean_macro_f1", ascending=False)
@@ -108,6 +111,12 @@ def write_markdown(fold_metrics: pd.DataFrame, pooled: pd.DataFrame, shifts: pd.
     day_lines = ["| Test day | Prior | Logistic | Random forest | XGBoost |", "|---:|---:|---:|---:|---:|"]
     for row in day_table.itertuples(index=False):
         day_lines.append(f"| {row.test_day} | {row.training_class_prior:.3f} | {row.logistic_regression:.3f} | {row.random_forest:.3f} | {row.xgboost:.3f} |")
+    inference_lines = ["| Model | Metric | Mean improvement vs class prior | 95% two-day block-bootstrap interval |",
+                       "|---|---|---:|---:|"]
+    for row in inference.sort_values(["model", "metric"]).itertuples(index=False):
+        inference_lines.append(f"| {row.model.replace('_', ' ')} | {row.metric} | {row.mean_delta_favoring_model:.3f} | [{row.block_bootstrap_95_low:.3f}, {row.block_bootstrap_95_high:.3f}] |")
+    association_lines = [f"- {r.model.replace('_', ' ')}: PSI vs macro-F1 Spearman {r.spearman_psi_macro_f1:.2f}; PSI vs log-loss Spearman {r.spearman_psi_log_loss:.2f}."
+                         for r in shift_association.itertuples(index=False)]
     text = f"""# FI-2010 Limit Order Book Companion Experiment
 
 ## Research question
@@ -143,6 +152,16 @@ Probabilities are scored with log loss and multiclass Brier score. Lower is bett
 - **Metrics:** accuracy, balanced accuracy, macro precision/recall/F1, log loss and multiclass Brier score. Per-event out-of-sample predictions are retained for independent review.
 - **Shift diagnostic:** decile-bin population stability index (PSI), with bin boundaries estimated on each training fold. Across folds, median feature PSI ranged {shifts.median_feature_psi.min():.3f}–{shifts.median_feature_psi.max():.3f}; the 90th percentile across features ranged {shifts.p90_feature_psi.min():.3f}–{shifts.p90_feature_psi.max():.3f}. The feature-wise tail matters: averages can be dominated by a small number of features. PSI is descriptive and does not identify a causal market regime.
 
+## Day-block uncertainty and shift association
+
+Paired two-day moving-block bootstrap intervals resample the nine ordered test days, not individual events. Positive improvement means higher macro-F1 or lower log loss than the training class-prior baseline.
+
+{chr(10).join(inference_lines)}
+
+These are descriptive uncertainty intervals, not significance tests. There are only nine folds and the expanding training sets overlap. No untouched final test period was reserved after results were explored. The PSI/performance rank associations are likewise exploratory and do not establish that measured feature shift causes performance changes:
+
+{chr(10).join(association_lines)}
+
 ## Interpretation and limitations
 
 1. The benchmark contains ten trading days from June 2010. Nine chronological test days are useful for a focused walk-forward exercise, but they cannot establish persistence across months, years, venues, or current market structure.
@@ -159,6 +178,7 @@ The official Fairdata package is identified by dataset ID `{metadata['dataset_id
 ```powershell
 python -m src.download_fi2010
 python -m src.market_microstructure
+python -m src.microstructure_inference
 python -m src.generate_microstructure_report
 ```
 
@@ -174,7 +194,8 @@ The raw package and extracted matrices are kept out of Git. Metrics, metadata, f
     return text
 
 
-def markdown_to_story(md: str, pooled: pd.DataFrame, fold_metrics: pd.DataFrame) -> list:
+def markdown_to_story(md: str, pooled: pd.DataFrame, fold_metrics: pd.DataFrame,
+                      inference: pd.DataFrame) -> list:
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name="ReportTitle", parent=styles["Title"], alignment=TA_CENTER, fontSize=22, leading=27, textColor=colors.HexColor("#17324d"), spaceAfter=18))
     styles.add(ParagraphStyle(name="H2Custom", parent=styles["Heading2"], fontSize=14, leading=18, textColor=colors.HexColor("#17324d"), spaceBefore=12, spaceAfter=6))
@@ -201,6 +222,7 @@ def markdown_to_story(md: str, pooled: pd.DataFrame, fold_metrics: pd.DataFrame)
         "Test-day scores": "The figure shows day-level macro-F1 for every anchored fold. Because each test day is kept visible, the chart exposes variation that a single pooled score would hide.",
         "Held-out label mix": "Class proportions change across the test days. A training-prior baseline is included to show the challenge created by class imbalance and changing labels.",
         "Feature distribution shift": "PSI compares each held-out day's feature distribution with training-derived decile bins. Median and 90th-percentile PSI are shown across the 144 features. This is a descriptive diagnostic; it does not assign named regimes or establish a cause.",
+        "Day-block uncertainty": "The table summarizes paired model improvements over the class-prior baseline with a two-day moving-block bootstrap over the nine ordered test folds. These descriptive intervals do not account for every dependency from overlapping training windows and are not significance tests.",
         "Design and limits": "The FI-2010 dataset covers five Nasdaq Nordic stocks across ten consecutive trading days in June 2010. The experiment uses 144 precomputed Z-score features, a 10-event target, and the official anchored folds CF_1 through CF_9. Models use fixed hyperparameters and each fold's training window only. The release used here does not support per-stock results, current-market validation, latency analysis, realistic execution-cost estimates, or a P&L backtest. Adjacent event labels overlap, so event rows are not independent.",
         "Reproducibility and attribution": "Official dataset record: https://etsin.fairdata.fi/dataset/73eb48d7-4dbc-4a10-a52a-da745b47a649. Dataset ID 73eb48d7-4dbc-4a10-a52a-da745b47a649; Fairdata package SHA-256 bcc89a5aa7d8067dda98374393444eb885a4283a41fd33e323496380e057e1a6; license CC BY 4.0. See report.md and run_metadata.json for the complete protocol, per-fold metrics, and command lines.",
     }
@@ -212,6 +234,23 @@ def markdown_to_story(md: str, pooled: pd.DataFrame, fold_metrics: pd.DataFrame)
             block.append(Image(str(RESULTS / "test_label_mix.png"), width=6.75*inch, height=3.15*inch))
         elif title == "Feature distribution shift":
             block.append(Image(str(RESULTS / "feature_psi_by_day.png"), width=6.75*inch, height=3.4*inch))
+        elif title == "Day-block uncertainty":
+            data = [["Model", "Metric", "Mean improvement", "95% interval"]]
+            for r in inference.sort_values(["model", "metric"]).itertuples(index=False):
+                data.append([r.model.replace("_", " "), r.metric,
+                             f"{r.mean_delta_favoring_model:.3f}",
+                             f"[{r.block_bootstrap_95_low:.3f}, {r.block_bootstrap_95_high:.3f}]"])
+            table = Table(data, repeatRows=1, colWidths=[1.6*inch, 1.05*inch, 1.6*inch, 1.5*inch])
+            table.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#17324d")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+                ("GRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#cbd5e1")),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f1f5f9")]),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ]))
+            block.append(table)
         story.append(KeepTogether(block))
     story.append(Spacer(1, 0.1*inch))
     story.append(Paragraph("Reference: Ntakaris et al. (2018), Journal of Forecasting, 37(8), 852-866, doi:10.1002/for.2543.", styles["BodyCustom"]))
@@ -238,11 +277,15 @@ def main() -> None:
     pooled = pooled_metrics(predictions)
     pooled.to_csv(RESULTS / "pooled_summary_metrics.csv", index=False)
     shifts = refresh_shift_diagnostics()
+    inference, shift_association = build_inference(fold_metrics, shifts)
+    inference.to_csv(RESULTS / "day_block_inference.csv", index=False, float_format="%.6f")
+    shift_association.to_csv(RESULTS / "shift_performance_association.csv", index=False,
+                             float_format="%.6f")
     make_figures(fold_metrics, shifts, predictions)
-    md = write_markdown(fold_metrics, pooled, shifts, metadata)
+    md = write_markdown(fold_metrics, pooled, shifts, metadata, inference, shift_association)
     pdf_path = RESULTS / "report.pdf"
     doc = SimpleDocTemplate(str(pdf_path), pagesize=letter, rightMargin=0.65*inch, leftMargin=0.65*inch, topMargin=0.62*inch, bottomMargin=0.72*inch, title="FI-2010 Limit Order Book Companion Experiment", author="Financial Market ML Research")
-    doc.build(markdown_to_story(md, pooled, fold_metrics), onFirstPage=page_footer, onLaterPages=page_footer)
+    doc.build(markdown_to_story(md, pooled, fold_metrics, inference), onFirstPage=page_footer, onLaterPages=page_footer)
     print(f"Wrote {pdf_path}")
     print(pooled.to_string(index=False))
 

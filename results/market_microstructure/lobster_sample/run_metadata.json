@@ -27,46 +27,6 @@
   "horizon_events": 100,
   "chronological_train_fraction": 0.7,
   "purged_train_events": 100,
-  "feature_extraction_runtime_seconds_by_symbol": {
-    "AMZN": {
-      "events": 155935.0,
-      "parser_seconds": 0.36487,
-      "parser_events_per_second": 427371.0,
-      "end_to_end_seconds": 0.9087685998529196
-    },
-    "AAPL": {
-      "events": 301587.0,
-      "parser_seconds": 0.687747,
-      "parser_events_per_second": 438514.0,
-      "end_to_end_seconds": 0.7360068999696523
-    },
-    "GOOG": {
-      "events": 112673.0,
-      "parser_seconds": 0.264915,
-      "parser_events_per_second": 425318.0,
-      "end_to_end_seconds": 0.3046176000498235
-    },
-    "INTC": {
-      "events": 581030.0,
-      "parser_seconds": 1.3123,
-      "parser_events_per_second": 442756.0,
-      "end_to_end_seconds": 1.356138899922371
-    },
-    "MSFT": {
-      "events": 595800.0,
-      "parser_seconds": 1.29334,
-      "parser_events_per_second": 460667.0,
-      "end_to_end_seconds": 1.3378435000777245
-    }
-  },
-  "compiler": "g++/clang++ C++17 -O3",
-  "runtime_platform": "Windows-11-10.0.26300-SP0",
-  "feature_output": "little-endian float64 records; column order defined by FEATURE_COLUMNS in src/run_lobster_sample.py",
-  "limitations": [
-    "one sample trading day only",
-    "not a distribution-shift or persistence claim",
-    "taker-touch counterfactual is not a full execution model"
-  ],
   "feature_columns": [
     "time_seconds",
     "event_type",
@@ -81,7 +41,29 @@
     "ask_size_1",
     "queue_imbalance_l1",
     "queue_imbalance_5",
-    "ofi_l1"
+    "ofi_l1",
+    "event_order_id",
+    "event_price_ticks",
+    "ask_price_level1",
+    "ask_size_level1",
+    "bid_price_level1",
+    "bid_size_level1",
+    "ask_price_level2",
+    "ask_size_level2",
+    "bid_price_level2",
+    "bid_size_level2",
+    "ask_price_level3",
+    "ask_size_level3",
+    "bid_price_level3",
+    "bid_size_level3",
+    "ask_price_level4",
+    "ask_size_level4",
+    "bid_price_level4",
+    "bid_size_level4",
+    "ask_price_level5",
+    "ask_size_level5",
+    "bid_price_level5",
+    "bid_size_level5"
   ],
   "models": {
     "training_class_prior": "training-window class frequencies",
@@ -92,21 +74,75 @@
   },
   "strategy_counterfactual": {
     "decision": "take the predicted up/down class; skip predicted stationary",
-    "entry": "one share at the next event displayed best price",
-    "exit": "opposite displayed best price 100 events after the signal",
+    "entry": "marketable sweep of up to five displayed levels after 1, 10, or 50 events",
+    "exit": "opposite-side sweep 100 events after entry; residual shares marked to mid",
     "position_overlap": "prevented; next signal is considered after the prior exit",
+    "requested_order_shares": [
+      1.0,
+      10.0,
+      100.0
+    ],
     "fees_bps_per_side": [
       0.0,
       5.0,
       10.0
     ],
-    "limits": "no market impact or queue model; one-day scenarios, not production fills or profitability evidence"
+    "latency_scenarios_events": [
+      1,
+      10,
+      50
+    ],
+    "limits": "event-count delay is not measured latency; impact beyond five levels is omitted; one-day counterfactual only"
   },
-  "timestamp_utc": "2026-11-21T22:50:35.308224+00:00",
+  "passive_queue_proxy": {
+    "entry": "post at displayed bid for predicted up moves and displayed ask for predicted down moves",
+    "queue_ahead": "displayed top-level depth times 1x, 2x, or 4x stress multiplier",
+    "queue_depletion": "visible executions at exact price and side only; cancellations ignored",
+    "exit": "five-level taker sweep after the 100-event horizon; residual marked to mid",
+    "limitations": "aggregate conservative queue-ahead proxy, not exact FIFO or order-ID replay; no maker rebates"
+  },
+  "feature_extraction_runtime_seconds_by_symbol": {
+    "AMZN": {
+      "events": 155935.0,
+      "parser_seconds": 0.419148,
+      "parser_events_per_second": 372028.0
+    },
+    "AAPL": {
+      "events": 301587.0,
+      "parser_seconds": 0.765015,
+      "parser_events_per_second": 394224.0
+    },
+    "GOOG": {
+      "events": 112673.0,
+      "parser_seconds": 0.264124,
+      "parser_events_per_second": 426591.0
+    },
+    "INTC": {
+      "events": 581030.0,
+      "parser_seconds": 1.50033,
+      "parser_events_per_second": 387269.0
+    },
+    "MSFT": {
+      "events": 595800.0,
+      "parser_seconds": 1.67655,
+      "parser_events_per_second": 355373.0
+    }
+  },
+  "compiler": "g++/clang++ C++17 -O3",
+  "runtime_platform": "Windows-11-10.0.26300-SP0",
+  "feature_output": "little-endian float64 records including message identifiers, event prices, and five book levels; column order defined by FEATURE_COLUMNS in src/run_lobster_sample.py",
   "package_versions": {
     "numpy": "2.2.3",
     "pandas": "2.3.3",
     "scikit-learn": "1.6.1",
     "xgboost": "3.1.2"
-  }
+  },
+  "timestamp_utc": "2026-11-22T11:05:28.043051+00:00",
+  "limitations": [
+    "one sample trading day only",
+    "not a distribution-shift or persistence claim",
+    "event-count delay is not measured latency",
+    "passive queue proxy is not exact FIFO replay",
+    "counterfactual five-level sweep is not a full execution model"
+  ]
 }

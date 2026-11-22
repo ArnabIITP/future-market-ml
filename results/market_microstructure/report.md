@@ -48,6 +48,25 @@ Probabilities are scored with log loss and multiclass Brier score. Lower is bett
 - **Metrics:** accuracy, balanced accuracy, macro precision/recall/F1, log loss and multiclass Brier score. Per-event out-of-sample predictions are retained for independent review.
 - **Shift diagnostic:** decile-bin population stability index (PSI), with bin boundaries estimated on each training fold. Across folds, median feature PSI ranged 0.010–0.034; the 90th percentile across features ranged 2.689–13.978. The feature-wise tail matters: averages can be dominated by a small number of features. PSI is descriptive and does not identify a causal market regime.
 
+## Day-block uncertainty and shift association
+
+Paired two-day moving-block bootstrap intervals resample the nine ordered test days, not individual events. Positive improvement means higher macro-F1 or lower log loss than the training class-prior baseline.
+
+| Model | Metric | Mean improvement vs class prior | 95% two-day block-bootstrap interval |
+|---|---|---:|---:|
+| logistic regression | log_loss | 0.043 | [0.033, 0.052] |
+| logistic regression | macro_f1 | 0.209 | [0.192, 0.222] |
+| random forest | log_loss | 0.091 | [0.071, 0.126] |
+| random forest | macro_f1 | 0.289 | [0.261, 0.322] |
+| xgboost | log_loss | 0.124 | [0.101, 0.145] |
+| xgboost | macro_f1 | 0.292 | [0.257, 0.325] |
+
+These are descriptive uncertainty intervals, not significance tests. There are only nine folds and the expanding training sets overlap. No untouched final test period was reserved after results were explored. The PSI/performance rank associations are likewise exploratory and do not establish that measured feature shift causes performance changes:
+
+- logistic regression: PSI vs macro-F1 Spearman 0.00; PSI vs log-loss Spearman 0.38.
+- random forest: PSI vs macro-F1 Spearman -0.13; PSI vs log-loss Spearman 0.43.
+- xgboost: PSI vs macro-F1 Spearman -0.02; PSI vs log-loss Spearman 0.42.
+
 ## Interpretation and limitations
 
 1. The benchmark contains ten trading days from June 2010. Nine chronological test days are useful for a focused walk-forward exercise, but they cannot establish persistence across months, years, venues, or current market structure.
@@ -64,6 +83,7 @@ The official Fairdata package is identified by dataset ID `73eb48d7-4dbc-4a10-a5
 ```powershell
 python -m src.download_fi2010
 python -m src.market_microstructure
+python -m src.microstructure_inference
 python -m src.generate_microstructure_report
 ```
 

@@ -1,0 +1,7 @@
+model,metric,interpretation,test_days,block_length_days,mean_model,mean_class_prior,mean_delta_favoring_model,block_bootstrap_95_low,block_bootstrap_95_high,inference_note
+logistic_regression,macro_f1,positive_delta_favors_model,9,2,0.394653,0.185665,0.208988,0.192353,0.221822,Descriptive interval over nine ordered folds; not a significance test.
+logistic_regression,log_loss,positive_delta_favors_model,9,2,1.035316,1.078657,0.043341,0.032913,0.051938,Descriptive interval over nine ordered folds; not a significance test.
+random_forest,macro_f1,positive_delta_favors_model,9,2,0.474187,0.185665,0.288522,0.261272,0.321822,Descriptive interval over nine ordered folds; not a significance test.
+random_forest,log_loss,positive_delta_favors_model,9,2,0.987474,1.078657,0.091184,0.070637,0.126036,Descriptive interval over nine ordered folds; not a significance test.
+xgboost,macro_f1,positive_delta_favors_model,9,2,0.477838,0.185665,0.292173,0.257102,0.324893,Descriptive interval over nine ordered folds; not a significance test.
+xgboost,log_loss,positive_delta_favors_model,9,2,0.954798,1.078657,0.123859,0.100853,0.144900,Descriptive interval over nine ordered folds; not a significance test.

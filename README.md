@@ -10,7 +10,7 @@ FUTURE is a reproducible financial machine-learning study built around that ques
 |---|---|---|
 | **Daily volatility (primary)** | Five liquid US-listed ETFs; expanding-window forecasts from 2010–2026 | ML lowers MAE versus historical volatility for four of five assets, but raises RMSE for all five. Gains are modest and vary by asset and year. |
 | **Limit-order-book (companion)** | FI-2010; nine anchored test days, 354,825 held-out events | Models beat the class-prior baseline, but the top model changes with aggregation and scores vary across days. |
-| **Raw-event engineering demo** | Official LOBSTER message/book samples; five Nasdaq stocks, one session | A C++ feature path and purged chronological classifier run end to end. A simple taker-touch counterfactual loses before fees, showing that label skill alone is not a trading edge. |
+| **Raw-event engineering demo** | Official LOBSTER message/book samples; five Nasdaq stocks, one session | A C++ feature path and purged chronological classifier run end to end. Five-level execution sensitivities remain negative before fees, showing that label skill alone is not a trading edge. |
 
 ## What the results say
 
@@ -18,7 +18,7 @@ FUTURE is a reproducible financial machine-learning study built around that ques
 
 The FI-2010 companion adds a faster market-microstructure task. Its classifiers substantially beat a training-class-prior baseline, yet random forest leads on pooled macro-F1 while XGBoost leads on the equal-weight mean across test days and on pooled log loss. This benchmark demonstrates learnable structure in its supplied features; its ten-day span cannot establish a durable signal for modern electronic markets.
 
-A separate raw-event demonstration processes LOBSTER message and five-level order-book files for five Nasdaq stocks. Several models improve macro-F1 on this single-session sample, though the gains are not consistent across every model and stock. Their one-share taker-touch counterfactual has negative gross results before fees. This is a useful check against confusing classification scores with tradable returns, not evidence about persistence across days.
+A separate raw-event demonstration processes LOBSTER message and five-level order-book files for five Nasdaq stocks. Several models improve macro-F1 on this single-session sample, though the gains are not consistent across every model and stock. The expanded five-level execution sensitivity has negative gross results before fees across the tested delays and sizes. This is a useful check against confusing classification scores with tradable returns, not evidence about persistence across days.
 
 The daily-volatility and FI-2010 sections are forecasting experiments, **not evidence of a profitable strategy**. Only the separate LOBSTER demonstration includes a simplified execution-cost counterfactual, with the limitations described below.
 
@@ -67,6 +67,12 @@ This companion uses the official FI-2010 NoAuction Z-score feature matrices and 
 
 The equal-weight mean scores each day equally; pooled scores weight each event equally. That changes which model ranks first. All three classifiers beat the class-prior reference on these metrics, but the leaderboard is close between the tree models and their per-day scores move. The adjacent forward-horizon labels overlap, so event counts are not independent observations.
 
+To show uncertainty at the day level, the repository also reports paired two-day moving-block bootstrap intervals for each model's mean improvement over the class-prior baseline. Across nine ordered test folds, XGBoost's mean macro-F1 advantage is 0.292 (95% descriptive interval 0.257 to 0.325); its mean log-loss improvement is 0.124 (0.101 to 0.145). The intervals resample days, not events. With only nine chronological folds and expanding overlapping training sets, these are descriptive uncertainty summaries, not independent-sample significance tests or proof of persistence.
+
+The exploratory rank association between feature PSI and log loss is positive but modest (Spearman 0.38–0.43 across the three models); the association with macro-F1 is near zero in this nine-day sample. This does not establish that PSI causes performance changes. The inference outputs are in [`day_block_inference.csv`](results/market_microstructure/day_block_inference.csv) and [`shift_performance_association.csv`](results/market_microstructure/shift_performance_association.csv).
+
+No final untouched test period was reserved after these results were explored. Treat all reported fold results as a completed benchmark study; a future extension should lock its model choices and evaluation protocol before collecting a new test period.
+
 ![Held-out macro-F1 by FI-2010 anchored test day.](results/market_microstructure/walk_forward_macro_f1.png)
 
 The feature-shift diagnostic shows relatively small median PSI alongside very large 90th-percentile feature PSI in some folds. A small typical shift therefore coexists with substantial shifts in a subset of features.
@@ -75,7 +81,7 @@ The feature-shift diagnostic shows relatively small median PSI alongside very la
 
 ## Raw-event engineering and execution reality check
 
-FI-2010 is distributed as normalized feature matrices, so it cannot support an order-entry or fill simulation. To exercise a raw message path, the project now includes LOBSTER's publicly posted five-level message and order-book samples for AAPL, AMZN, GOOG, INTC, and MSFT on 2012-06-21. The C++17 program reads aligned event and book rows, checks their structure and market state, and emits compact features for spread, queue imbalance, order-flow imbalance, and signed event flow. It processed about 1.75 million rows at roughly 425,000–461,000 rows per second in this local Windows run. This is buffered file-processing throughput, not exchange latency or production performance.
+FI-2010 is distributed as normalized feature matrices, so it cannot support an order-entry or fill simulation. To exercise a raw message path, the project includes LOBSTER's publicly posted five-level message and order-book samples for AAPL, AMZN, GOOG, INTC, and MSFT on 2012-06-21. The C++17 program validates aligned rows and market state, retains message identifiers and event prices, and emits microstructure features plus all five book levels. It processed about 1.75 million rows at roughly 355,000–427,000 rows per second in this local Windows run. This is buffered file-processing throughput, not exchange latency or production performance.
 
 Each stock uses the first 70% of its session for training and the final 30% for testing. The last 100 training events are purged because the label looks 100 events ahead. Macro-F1 is emphasized because the session's class distribution is strongly imbalanced.
 
@@ -89,15 +95,15 @@ Each stock uses the first 70% of its session for training and the final 30% for 
 
 These are descriptive rankings on the reported test slices; they are not a separate model-selection validation.
 
-The cost check uses a fixed prediction rule: enter one share at the next event's displayed best price, exit at the opposite best price 100 events after the signal, and prevent overlapping positions. It assumes 0, 5, or 10 basis points of fees per side. The spread crossing is included in gross results.
+The cost check uses a fixed prediction rule and prevents overlapping positions. It sweeps the five displayed levels for requested quantities of 1, 10, or 100 shares, delays entry by 1, 10, or 50 events, and applies 0, 5, or 10 basis points of fees per side. Partial fills are tracked; residual inventory at the scheduled exit is marked to mid.
 
 | Model | Test trades | Mean gross bps/trade | Mean net bps/trade at 5 bps/side |
 |---|---:|---:|---:|
-| XGBoost | 2,262 | -2.67 | -12.67 |
-| Random forest | 4,296 | -3.15 | -13.15 |
-| Engineered logistic regression | 4,634 | -3.24 | -13.24 |
-| Queue-imbalance logistic regression | 4,352 | -3.45 | -13.45 |
-| Training class prior | 1,692 | -3.13 | -13.13 |
+| XGBoost | 2,244 | -2.68 | -12.68 |
+| Random forest | 4,257 | -3.17 | -13.17 |
+| Engineered logistic regression | 4,591 | -3.23 | -13.23 |
+| Queue-imbalance logistic regression | 4,314 | -3.44 | -13.44 |
+| Training class prior | 1,676 | -3.15 | -13.15 |
 
 Every model loses on this simple taker-touch counterfactual before fees. The result is deliberately reported because the stronger classification scores do not translate into positive gross performance here.
 
@@ -105,7 +111,15 @@ Every model loses on this simple taker-touch counterfactual before fees. The res
 
 ![Mean net bps per trade under fee scenarios; the zero-fee case is already negative.](results/market_microstructure/lobster_sample/taker_touch_fee_sensitivity.png)
 
-This is not a full execution simulator: it assumes a one-share fill at displayed top-of-book, with no market impact, queue priority, or measured latency beyond waiting for the next event. It covers one historical day and cannot establish stability. Raw sample files are not committed. See the [official sample source](https://php.lobsterdata.com/info/DataSamples.php), [access options](https://php.lobsterdata.com/info/AccessOptions.php), and [terms](https://php.lobsterdata.com/termsAndConditions.php).
+![Execution sensitivity to event delay and requested order size.](results/market_microstructure/lobster_sample/execution_sensitivity.png)
+
+The passive queue-ahead proxy shows how quickly fill likelihood falls when assumed queue depth grows. For a 10-share XGBoost order with a one-event delay, 7.5% of signals receive any entry fill at 1x displayed depth ahead; this drops to 1.4% at 4x. At 5 bps per side, the mean marked result remains around -11.3 bps per filled trade. It assumes no maker rebate and ignores cancellations, so it is a stress diagnostic rather than a calibrated fill model.
+
+![Passive order fill probability as assumed queue ahead increases.](results/market_microstructure/lobster_sample/passive_queue_sensitivity.png)
+
+At 5 bps per side, XGBoost's mean taker net result moves from -12.68 bps/trade at a one-event delay and one-share size to -13.33 bps at 50 events; for 100 shares at 50 events it is -13.52 bps with about 99.6% of requested entry size filled on average.
+
+The report also includes a separate passive-order queue-ahead proxy. It joins the displayed best price, assumes 1x, 2x, or 4x displayed size ahead, and counts visible executions at that price toward a fill; cancellations do not improve its assumed queue position. It reports fill probability and a five-level taker exit. This is an aggregate queue stress model, not exact FIFO/order-ID replay. Both execution scenarios use event-count delays, not measured wall-clock or exchange latency, omit impact beyond five displayed levels and participant-specific fees, and cover only one day. Raw sample files are not committed. See the [official sample source](https://php.lobsterdata.com/info/DataSamples.php), [access options](https://php.lobsterdata.com/info/AccessOptions.php), and [terms](https://php.lobsterdata.com/termsAndConditions.php).
 
 Run the raw-event demonstration after installing the microstructure extras and a C++17 compiler:
 
@@ -152,6 +166,7 @@ The FI-2010 download and experiment are separate:
 ```powershell
 python -m src.download_fi2010
 python -m src.market_microstructure
+python -m src.microstructure_inference
 python -m src.generate_microstructure_report
 ```
 
@@ -162,11 +177,13 @@ The download checks the source package and inner ZIP against published SHA-256 c
 | Path | Contents |
 |---|---|
 | [`src/`](src/) | Data preparation, features, models, walk-forward evaluation, and report generation |
+| [`src/microstructure_inference.py`](src/microstructure_inference.py) | Paired day-block bootstrap intervals and descriptive PSI/performance associations for FI-2010 |
 | [`tests/`](tests/) | Focused checks for preprocessing, targets, and chronological splits |
 | [`notebooks/`](notebooks/) | Exploration, feature engineering, and model evaluation notebooks |
 | [`results/`](results/) | Committed forecast tables, fold/year/regime metrics, figures, predictions, and run metadata |
-| [`results/market_microstructure/`](results/market_microstructure/) | FI-2010 fold scores, shift diagnostics, predictions, and the raw-event sample report |
-| [`results/market_microstructure/lobster_sample/`](results/market_microstructure/lobster_sample/) | Per-stock metrics, taker-touch cost sensitivity, metadata, and charts |
+| [`results/market_microstructure/`](results/market_microstructure/) | FI-2010 fold scores, uncertainty analysis, shift diagnostics, predictions, and companion report |
+| [`results/market_microstructure/lobster_sample/`](results/market_microstructure/lobster_sample/) | Per-stock metrics, taker and passive queue sensitivities, metadata, and charts |
+| [`results/market_microstructure/report.pdf`](results/market_microstructure/report.pdf) | FI-2010 companion report with day-block uncertainty analysis |
 | [`src/lobster_features.cpp`](src/lobster_features.cpp) | C++17 feature extraction from aligned LOBSTER event and book samples |
 | [`research_report.pdf`](research_report.pdf) | Full daily volatility research report |
 | [`output/pdf/future_market_ml_research.pdf`](output/pdf/future_market_ml_research.pdf) | Combined report with the FI-2010 companion |
@@ -177,7 +194,7 @@ The download checks the source package and inner ZIP against published SHA-256 c
 - The daily target is noisy, and adjusted close data cannot reveal intraday or execution-level behavior. Asset histories differ.
 - Gains are modest, metric-dependent, and not consistent in every year. The analysis does not show that the learned signal is durable or that an ML model dominates the volatility baseline.
 - FI-2010 covers only ten trading days from 2010. The released matrices used here do not identify each row's stock, and overlapping labels make event-level results dependent. Its normalized features and benchmark design limit claims beyond this dataset.
-- Neither experiment simulates executable trades or measures fees, spread capture, latency, slippage, turnover, inventory, drawdown, or profitability.
+- The daily-volatility and FI-2010 experiments do not simulate executable trades. The LOBSTER taker sweep and passive queue-ahead proxy are one-day counterfactuals; the latter is not exact FIFO replay. Neither measures real latency or participant-specific fees, models impact beyond the visible depth, or establishes profitability.
 - Results depend on the frozen data snapshots and specified hyperparameters. Re-fetching vendor data later may change prices and metrics.
 
 ## Data and code licenses
